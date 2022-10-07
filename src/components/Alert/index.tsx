@@ -6,8 +6,8 @@ import {
     AlertDialogContent,
     AlertDialogOverlay,
 } from '@chakra-ui/react'
-import { RefObject, useRef } from 'react'
-import { Button, ButtonGroup } from '@chakra-ui/react'
+import { RefObject } from 'react'
+import { Button } from '@chakra-ui/react'
 
 interface DeleteSectorAlertProps {
     isOpen: boolean,

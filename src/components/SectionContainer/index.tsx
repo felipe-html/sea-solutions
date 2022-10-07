@@ -1,6 +1,4 @@
-import { useEffect, useState } from "react";
 import { useSectors } from "../../hooks/useSectors";
-import { api } from "../../services/api";
 import { AccordionComponent } from "../Accordion";
 
 import styles from './styles.module.scss'

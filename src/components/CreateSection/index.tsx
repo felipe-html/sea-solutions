@@ -1,14 +1,11 @@
-import { AccordionComponent } from "../Accordion";
 import { Input } from '@chakra-ui/react'
-import styles from './styles.module.scss'
-import { Button, ButtonGroup } from '@chakra-ui/react'
+import { Button } from '@chakra-ui/react'
 import { useEffect, useState } from "react";
-import { PositionsProps, SectorProps } from "../SectionContainer";
+import { SectorProps } from "../SectionContainer";
 import { useSectors } from "../../hooks/useSectors";
-import { Routes, Route, useParams } from 'react-router-dom';
 import { useToast } from '@chakra-ui/react'
-import { useDispatch } from "react-redux";
-import { api } from "../../services/api";
+
+import styles from './styles.module.scss'
 
 type PostProps = {
     id: number,

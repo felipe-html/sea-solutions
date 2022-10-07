@@ -7,12 +7,11 @@ import {
 } from '@chakra-ui/react'
 import { useSectors } from '../../hooks/useSectors'
 import { SectorProps } from '../SectionContainer'
-import { Button, ButtonGroup } from '@chakra-ui/react'
-
-import styles from './styles.module.scss'
+import { Button } from '@chakra-ui/react'
 import { DeleteSectorAlert } from '../Alert'
 import { useState } from 'react'
 
+import styles from './styles.module.scss'
 interface AccordionProps {
     sector: SectorProps
 }
