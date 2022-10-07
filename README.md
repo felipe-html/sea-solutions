@@ -1,11 +1,11 @@
 ## Desafio front-end - Sea Solutions
 
 Este projeto foi criado utilizando:
-`
+
 - React.JS
 - Chakra-ui
 - Json Server
-`
+
 
 Antes de começar, instale as dependências utilizando o comando:
 
