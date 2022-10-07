@@ -10,7 +10,7 @@ export type SectorProps = {
 }
 
 export type PositionsProps = {
-    id: number,
+    id?: number,
     name: string,
     sector_id?: number
 }

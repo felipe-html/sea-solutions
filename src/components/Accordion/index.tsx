@@ -10,6 +10,7 @@ import { SectorProps } from '../SectionContainer'
 import { Button } from '@chakra-ui/react'
 import { DeleteSectorAlert } from '../Alert'
 import { useState } from 'react'
+import { useToast } from '@chakra-ui/react'
 
 import styles from './styles.module.scss'
 interface AccordionProps {
@@ -20,14 +21,40 @@ export function AccordionComponent({ sector }: AccordionProps) {
     const { id, name, positions } = sector
     const { deleteSector, setSectorToEdit } = useSectors()
     const [isOpen, setIsOpen] = useState<boolean>(false)
+    const toast = useToast()
 
     function handleConfirmDeletion() {
         setIsOpen(true)
         setSectorToEdit({} as SectorProps)
     }
 
-    function handleDeleteSector() {
-        deleteSector(id!)
+    function sendToast(title: string, description: string, status: 'error' | 'success') {
+        return toast({
+            title,
+            description,
+            status,
+            duration: 4000,
+            isClosable: true,
+        })
+    }
+
+    async function handleDeleteSector() {
+        let response = await deleteSector(id!)
+
+        if (response === 'success') {
+            sendToast(
+                'Sucesso',
+                'Setor excluído com sucesso!',
+                'success',
+            )
+        } else {
+            sendToast(
+                'Erro',
+                'Erro ao deletar o setor!',
+                'error',
+            )
+        }
+
         setIsOpen(false)
     }
 
@@ -45,8 +72,8 @@ export function AccordionComponent({ sector }: AccordionProps) {
                             <p>Nenhum cargo cadastrado.</p>
                         }
                         <div className={styles.contentContainer}>
-                            {positions?.map((position) => (
-                                <p key={position?.id}>{position.name}</p>
+                            {positions?.map((position, key) => (
+                                <p key={key}>{position.name}</p>
                             ))}
                         </div>
                         <div className={styles.buttons}>

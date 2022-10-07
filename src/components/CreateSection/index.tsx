@@ -1,28 +1,24 @@
 import { Input } from '@chakra-ui/react'
 import { Button } from '@chakra-ui/react'
 import { useEffect, useState } from "react";
-import { SectorProps } from "../SectionContainer";
+import { PositionsProps, SectorProps } from "../SectionContainer";
 import { useSectors } from "../../hooks/useSectors";
 import { useToast } from '@chakra-ui/react'
+import { api } from '../../services/api';
 
 import styles from './styles.module.scss'
-
-type PostProps = {
-    id: number,
-    name: string
-}
 
 export function CreateSection() {
     const [name, setName] = useState<string>('')
     const [currentPost, setCurrentPost] = useState<string>('')
-    const [posts, setPosts] = useState<PostProps[]>([])
-    const toast = useToast()
+    const [newPositions, setNewPositions] = useState<PositionsProps[]>([])
 
-    const { sendNewSector, updateSector, sectorToEdit, setSectorToEdit, positions } = useSectors()
+    const { sectorToEdit, setSectorToEdit, positions, sectors, setSectors, setPositions, getSectorsData } = useSectors()
+    const toast = useToast()
 
     function getData() {
         setName(sectorToEdit.name)
-        setPosts(sectorToEdit.positions)
+        setNewPositions(sectorToEdit.positions)
     }
 
     useEffect(() => {
@@ -36,69 +32,178 @@ export function CreateSection() {
     function resetFields() {
         setName('')
         setCurrentPost('')
-        setPosts([])
+        setNewPositions([])
+    }
+
+    function sendToast(title: string, description: string, status: 'error' | 'success') {
+        toast({
+            title,
+            description,
+            status,
+            duration: 4000,
+            isClosable: true,
+        })
     }
 
     //Verifica se já existe um cargo com esse nome em outro setor
     async function verifyPosition(positionName: string) {
+        if (positions.length === 0)
+            return undefined
         let sectorAlreadyExists = positions.find((item) => item.name.toLowerCase() == positionName.toLowerCase())
         return sectorAlreadyExists
     }
 
-    async function handleRegisterNewSection() {
+    async function verifySector(sectorName: string) {
+        if (sectors.length === 0)
+            return undefined
+        let sectorAlreadyExists = sectors.find((item) => item.name.toLowerCase() == sectorName.toLowerCase())
+        return sectorAlreadyExists
+    }
+
+    async function handleRegisterNewSector() {
         if (name === '') {
-            return toast({
-                title: 'Campo obrigatório*',
-                description: "O setor precisa de um nome.",
-                status: 'error',
-                duration: 4000,
-                isClosable: true,
-            })
+            return sendToast(
+                'Campo obrigatório*',
+                "O setor precisa de um nome.",
+                'error',
+            )
         }
 
-        let newSector = {
-            id: sectorToEdit?.id || null,
-            name,
-            positions: [...posts]
-        } as SectorProps
+        let sectorAlreadyExists = await verifySector(name)
 
-        let status = ''
-
-        if (sectorToEdit?.id) {
-            status = await updateSector(newSector)
-        } else {
-            status = await sendNewSector(newSector)
+        if (sectorAlreadyExists) {
+            return sendToast(
+                'Erro',
+                'Este setor já existe.',
+                'error'
+            )
         }
 
-        let title = ''
-        let description = ''
-
-        switch (status) {
-            case 'success':
-                title = 'Sucesso!'
-                description = 'Setor criado com sucesso!'
-                setSectorToEdit({} as SectorProps)
-                resetFields()
-                break;
-
-            case 'error':
-                title = 'Erro!'
-                description = 'Desculpe! Houve um erro ao tentar criar um novo setor!'
-                break;
-
-            case 'sector-exists':
-                title = 'Erro!'
-                description = 'Este setor já existe.'
-                break;
-        }
-
-        toast({
-            title,
-            description,
-            status: status === 'success' ? 'success' : 'error',
-            duration: 4000,
-            isClosable: true,
+        let sectorId = await api.post(`/sectors`, {
+            name: name,
         })
+            .then((response) => {
+                setSectors(oldValue => {
+                    let newValue = {
+                        id: response.data?.id,
+                        name: response.data.name,
+                        positions: []
+                    }
+                    return [...oldValue, newValue]
+                })
+                return response.data.id
+            })
+            .catch((error) => {
+                return 0
+            })
+
+        if (sectorId === 0) {
+            return sendToast(
+                'Erro',
+                'Houve um erro ao tentar criar o setor.',
+                'error'
+            )
+        }
+
+        newPositions.forEach(async (position) => {
+            await api.post(`/positions`, {
+                name: position.name,
+                sector_id: sectorId
+            })
+                .then((response) => {
+                    setPositions(oldValue => {
+                        return [...oldValue, response.data]
+                    })
+                })
+                .catch((error) => {
+                    sendToast(
+                        'Erro',
+                        `Houve um erro ao tentar criar o cargo ${position.name}`,
+                        'error'
+                    )
+                })
+        })
+
+        sendToast(
+            'Criado!',
+            'Setor criado com sucesso!',
+            'success'
+        )
+
+        resetFields()
+
+        await getSectorsData()
+    }
+
+    async function handleUpdateSector() {
+        if (name === '') {
+            return sendToast(
+                'Campo obrigatório*',
+                "O setor precisa de um nome.",
+                'error',
+            )
+        }
+
+        let sectorAlreadyExists = await verifySector(name)
+
+        if (sectorAlreadyExists && sectorToEdit.id !== sectorAlreadyExists?.id) {
+            return sendToast(
+                'Erro!',
+                'Este setor já existe.',
+                'error'
+            )
+        }
+
+        let id = await api.put(`/sectors/${sectorToEdit?.id!}`, {
+            name: name,
+        })
+            .then((response) => {
+                return response.data.id
+            })
+            .catch((err0r) => {
+                return 0
+            })
+
+        if (id === 0) {
+            return sendToast(
+                'Erro!',
+                'Este departamento já existe.',
+                'error'
+            )
+        }
+
+        //Verifica os cargos que foram excluídos
+        newPositions.forEach(async (position) => {
+            if (!position.id) {
+                await api.post(`/positions`, {
+                    name: position.name,
+                    sector_id: id
+                })
+            }
+        })
+
+        //Adiciona os novos cargos
+        positions.forEach(async (position) => {
+            if (position.sector_id !== id) {
+                return
+            }
+
+            let positionWasNotDeleted = newPositions.find(item => item?.id === position?.id)
+            console.log(positionWasNotDeleted)
+            if (!positionWasNotDeleted) {
+                await api.delete(`/positions/${position?.id}`)
+                    .catch((error) => {
+                    })
+            }
+        })
+
+        await getSectorsData()
+        resetFields()
+        sendToast(
+            'Sucesso!',
+            'O setor foi atualizado com sucesso!',
+            'success'
+        )
     }
 
     async function handleRegisterNewPost() {
@@ -109,20 +214,15 @@ export function CreateSection() {
 
         if (positionAlreadyExists) {
 
-            if (sectorToEdit?.id !== positionAlreadyExists?.sector_id) {
-
-                return toast({
-                    title: 'Este cargo já existe!',
-                    description: 'O cargo já está relacionado a outro setor.',
-                    status: 'error',
-                    duration: 4000,
-                    isClosable: true,
-                })
-            }
+            return sendToast(
+                'Este cargo já existe!',
+                'O cargo já existe.',
+                'error'
+            )
         }
 
-        setPosts(oldValue => {
-            return [...oldValue, { id: oldValue[oldValue.length - 1]?.id + 1, name: currentPost }]
+        setNewPositions(oldValue => {
+            return [...oldValue, { name: currentPost }]
         })
 
         setCurrentPost('')
@@ -158,7 +258,7 @@ export function CreateSection() {
                         <Button className={styles.button} onClick={handleRegisterNewPost}>Adicionar</Button>
                     </div>
                 </div>
-                {posts.length > 0 ? (
+                {newPositions.length > 0 ? (
                     <p>Cargos:</p>
 
                 ) : (
@@ -166,16 +266,16 @@ export function CreateSection() {
                 )}
 
                 <div className={styles.postsContainer}>
-                    {posts.map((item) => (
+                    {newPositions.map((item, key) => (
                         <p
                             title='Clique para remover'
                             onClick={() => {
-                                setPosts(oldValue => {
+                                setNewPositions(oldValue => {
                                     return oldValue.filter(post => post?.id !== item?.id)
                                 })
                             }}
                             className={styles.post}
-                            key={item?.id}
+                            key={key}
                         >
                             {item.name}
                         </p>
@@ -186,7 +286,7 @@ export function CreateSection() {
                 {sectorToEdit?.id &&
                     <Button onClick={handleCancelEdit}>Cancelar</Button>
                 }
-                <Button className={styles.saveButton} onClick={handleRegisterNewSection}>Salvar</Button>
+                <Button className={styles.saveButton} onClick={() => sectorToEdit.id ? handleUpdateSector() : handleRegisterNewSector()}>Salvar</Button>
             </div>
         </section>
     )
