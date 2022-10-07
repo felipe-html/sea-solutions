@@ -1,0 +1,45 @@
+.section {
+    display: flex;
+    flex-direction: column;
+    width: 500px;
+    height: 500px;
+    max-height: 500px;
+    background-color: white;
+    gap: 1rem;
+    padding: 1rem;
+    -webkit-box-shadow: 0px 0px 15px -5px rgba(0, 0, 0, 0.22);
+    box-shadow: 0px 0px 15px -5px rgba(0, 0, 0, 0.22);
+
+    h1 {
+        margin-bottom: 1rem;
+        font-weight: bold;
+        font-size: 1.4rem;
+    }
+}
+
+@media(max-width:1296px) {
+    .section {
+        width: 95vw;
+        max-width: 700px;
+    }
+}
+
+.sectorsContainer {
+    display: flex;
+    flex-direction: column;
+    height: 450px;
+    gap: 1rem;
+    overflow: auto;
+}
+
+.sectorsContainer::-webkit-scrollbar {
+    width: 12px;
+}
+
+.sectorsContainer::-webkit-scrollbar-track {
+    background: rgb(231, 231, 231);
+}
+
+.sectorsContainer::-webkit-scrollbar-thumb {
+    background-color: rgb(219, 219, 219);
+}
